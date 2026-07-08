@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app version="6.0" xmlns="https://jakarta.ee/xml/ns/jakartaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd">
+    <filter>
+        <filter-name>TransactionFilter</filter-name>
+        <filter-class>com.hrms.filter.TransactionFilter</filter-class>
+    </filter>
+    <filter>
+        <filter-name>AuthenticationFilter</filter-name>
+        <filter-class>com.hrms.filter.AuthenticationFilter</filter-class>
+    </filter>
+    <filter>
+        <filter-name>AuthorizationFilter</filter-name>
+        <filter-class>com.hrms.filter.AuthorizationFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>TransactionFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+    <filter-mapping>
+        <filter-name>AuthenticationFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+    <filter-mapping>
+        <filter-name>AuthorizationFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+    <session-config>
+        <tracking-mode>COOKIE</tracking-mode>
+    </session-config>
+    <welcome-file-list>
+        <welcome-file>home</welcome-file>
+    </welcome-file-list>
+    <!-- Dùng mấy cái này làm lưới bảo đảm cho mọi case mà FE + BE chưa bắt đc -->
+    <error-page>
+        <error-code>404</error-code>
+        <location>/WEB-INF/views/common/404.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>405</error-code>
+        <!-- LƯỜI, dùng tạm cái này thay ko các case ko tương thích method -->
+        <location>/WEB-INF/views/common/403.jsp</location>
+    </error-page>
+    <error-page>
+        <exception-type>java.lang.Throwable</exception-type>
+        <location>/WEB-INF/views/common/500.jsp</location>
+    </error-page>
+</web-app>
+<!-- Giải thích cơ chế Stacking của FILTER:
+Thứ tự: 
+    TransactionFilter -> AuthenFilter -> AuthoFilter -> Servlet.
+Luồng đi thực tế:
+    TransactionFilter bắt đầu -> Chạy phần code TRƯỚC chain.doFilter.
+        Nó gọi chain.doFilter -> Nhảy vào AuthenFilter.
+    AuthenFilter chạy phần TRƯỚC chain.doFilter (Check session, nạp SecurityContext).
+        Nó gọi chain.doFilter -> Nhảy vào AuthoFilter.
+    AuthoFilter chạy phần TRƯỚC chain.doFilter (Check quyền).
+        Nó gọi chain.doFilter -> Nhảy vào Servlet (Xử lý logic chính, SQL, v.v.).
+    Servlet xong -> Quay ngược lại AuthoFilter.
+    AuthoFilter xong -> Quay ngược lại AuthenFilter.
+    AuthenFilter xong -> Quay ngược lại TransactionFilter.
+    TransactionFilter chạy phần SAU chain.doFilter (Chính là khối finally để clear() dữ liệu).
+-->
